@@ -62,15 +62,17 @@ transform_test = transforms.Compose([
 ])
 
 trainset = datasets.CIFAR10Instance(root='./data', train=True, download=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=2, shuffle=True, num_workers=0)
 
 testset = datasets.CIFAR10Instance(root='./data', train=False, download=True, transform=transform_test)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
+testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=0)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 ndata = trainset.__len__()
 
+
 print('==> Building model..')
+# low_dim 是最后一层线性层的维度 (linear): Linear(in_features=512, out_features=low_dim, bias=True)
 net = models.__dict__['ResNet18'](low_dim=args.low_dim)
 # define leminiscate
 if args.nce_k > 0:
@@ -132,6 +134,7 @@ def train(epoch):
     net.train()
 
     end = time.time()
+    # inputs [batch_size, 3, w, h], targets [batch_size, ] 标记属于哪个类别, index [batch_size, ] 标记图片在数据集中的index
     for batch_idx, (inputs, targets, indexes) in enumerate(trainloader):
         data_time.update(time.time() - end)
         inputs, targets, indexes = inputs.to(device), targets.to(device), indexes.to(device)

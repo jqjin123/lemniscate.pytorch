@@ -24,7 +24,8 @@ class NCEFunction(Function):
         weight.resize_(batchSize, K+1, inputSize)
 
         # inner product
-        out = torch.bmm(weight, x.data.resize_(batchSize, inputSize, 1))
+        #out = torch.bmm(weight, x.data.resize_(batchSize, inputSize, 1))
+        out = torch.bmm(weight, x.reshape(batchSize, inputSize, 1))
         out.div_(T).exp_() # batchSize * self.K+1
         x.data.resize_(batchSize, inputSize)
 
@@ -75,6 +76,8 @@ class NCEAverage(nn.Module):
         super(NCEAverage, self).__init__()
         self.nLem = outputSize
         self.unigrams = torch.ones(self.nLem)
+        a = self.unigrams[0]
+        b = self.unigrams[1]
         self.multinomial = AliasMethod(self.unigrams)
         self.multinomial.cuda()
         self.K = K
@@ -84,6 +87,7 @@ class NCEAverage(nn.Module):
         self.register_buffer('memory', torch.rand(outputSize, inputSize).mul_(2*stdv).add_(-stdv))
  
     def forward(self, x, y):
+        # x [batch_size, input_size], y [batch_size, ] 即每个img在数据集中的index
         batchSize = x.size(0)
         idx = self.multinomial.draw(batchSize * (self.K+1)).view(batchSize, -1)
         out = NCEFunction.apply(x, y, self.memory, idx, self.params)
